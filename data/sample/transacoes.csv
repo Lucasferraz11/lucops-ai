@@ -1,0 +1,9 @@
+id_transacao,data,cliente_id,valor,status
+T001,2026-10-01,C001,150.00,aprovada
+T002,2026-10-01,C002,220.50,aprovada
+T003,2026-10-02,C003,350.00,pendente
+T004,2026-10-02,C004,99.90,aprovada
+T005,2026-10-03,C005,500.00,cancelada
+T006,2026-10-03,C006,130.00,aprovada
+T007,2026-10-04,C007,240.00,pendente
+T008,2026-10-04,C008,750.00,aprovada
