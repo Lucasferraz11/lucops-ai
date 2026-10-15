@@ -1,0 +1,17 @@
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Variaveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Arquivos temporarios
+*.log
+.pytest_cache/
+
+# Dados privados
+data/private/
