@@ -15,3 +15,8 @@ __pycache__/
 
 # Dados privados
 data/private/
+
+# Arquivos gerados pelo empacotamento Python
+*.egg-info/
+build/
+dist/
