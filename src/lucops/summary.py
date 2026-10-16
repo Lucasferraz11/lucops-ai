@@ -33,9 +33,7 @@ def summarize_results(
             valid_records += 1
 
     valid_percentage = (
-        round(valid_records / total_records * 100, 2)
-        if total_records > 0
-        else None
+        round(valid_records / total_records * 100, 2) if total_records > 0 else None
     )
 
     return DataQualitySummary(

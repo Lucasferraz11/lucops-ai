@@ -7,9 +7,7 @@ from .status import get_quality_status
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="LucOps AI - Data Quality Analysis"
-    )
+    parser = argparse.ArgumentParser(description="LucOps AI - Data Quality Analysis")
 
     parser.add_argument(
         "csv_file",
@@ -39,13 +37,9 @@ def main():
             unique_fields=["id_transacao"],
         )
     except FileNotFoundError:
-        parser.error(
-            f"Arquivo CSV não encontrado: {args.csv_file}"
-        )
+        parser.error(f"Arquivo CSV não encontrado: {args.csv_file}")
     except ValueError as exc:
-        parser.error(
-            f"CSV inválido: {exc}"
-        )
+        parser.error(f"CSV inválido: {exc}")
 
     quality_status = get_quality_status(result.summary)
 

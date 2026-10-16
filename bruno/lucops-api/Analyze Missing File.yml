@@ -1,0 +1,34 @@
+info:
+  name: Analyze Missing File
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/analyses
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Deve retornar status 422", function () {
+            expect(res.getStatus()).to.equal(422);
+        });
+
+        test("Deve identificar o campo file como obrigatorio", function () {
+            const body = res.getBody();
+
+            const missingFile = body.detail.some(function (error) {
+                return error.loc.includes("file");
+            });
+
+            expect(missingFile).to.equal(true);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

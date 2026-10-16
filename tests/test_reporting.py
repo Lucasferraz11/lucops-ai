@@ -54,10 +54,7 @@ def test_report_formats_percentage_with_two_decimals():
 def test_save_quality_report_creates_file(tmp_path: Path):
     output_path = tmp_path / "reports" / "quality_report.txt"
 
-    report = (
-        "RELATÓRIO DE QUALIDADE DE DADOS\n"
-        "Registros válidos: 4"
-    )
+    report = "RELATÓRIO DE QUALIDADE DE DADOS\nRegistros válidos: 4"
 
     saved_path = save_quality_report(report, output_path)
 
@@ -81,6 +78,9 @@ def test_save_quality_report_overwrites_existing_file(
         output_path,
     )
 
-    assert output_path.read_text(
-        encoding="utf-8",
-    ) == "Novo relatório"
+    assert (
+        output_path.read_text(
+            encoding="utf-8",
+        )
+        == "Novo relatório"
+    )

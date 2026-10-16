@@ -12,7 +12,6 @@ class RecordValidationResult:
     issues: tuple[DataQualityIssue, ...]
 
 
-
 def run_pipeline(
     file_path: str | Path,
     required_columns: Iterable[str],
@@ -27,9 +26,7 @@ def run_pipeline(
     results = []
 
     fields_to_check = tuple(unique_fields or [])
-    seen_values = {
-        field: set() for field in fields_to_check
-    }
+    seen_values = {field: set() for field in fields_to_check}
 
     for index, record in enumerate(records, start=1):
         issues = validate_record(
