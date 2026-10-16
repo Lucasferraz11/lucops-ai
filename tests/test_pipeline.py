@@ -11,9 +11,7 @@ def test_pipeline_detects_missing_required_field(
     csv_file = tmp_path / "transacoes.csv"
 
     csv_file.write_text(
-        "id_transacao,cliente_id,valor\n"
-        "T001,C001,150.00\n"
-        "T002,,220.50\n",
+        "id_transacao,cliente_id,valor\nT001,C001,150.00\nT002,,220.50\n",
         encoding="utf-8",
     )
 
@@ -39,7 +37,6 @@ def test_pipeline_detects_missing_required_field(
     assert len(results[1].issues) == 1
     assert results[1].issues[0].field == "cliente_id"
     assert results[1].issues[0].message == "Field is required."
-
 
 
 def test_pipeline_applies_financial_rule(tmp_path: Path):
@@ -77,6 +74,7 @@ def test_pipeline_applies_financial_rule(tmp_path: Path):
     assert len(results[2].issues) == 1
     assert results[2].issues[0].field == "valor"
     assert results[2].issues[0].message == "Rule failed."
+
 
 def test_pipeline_detects_duplicate_transactions(
     tmp_path: Path,

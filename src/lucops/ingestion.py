@@ -1,4 +1,3 @@
-
 import csv
 from collections.abc import Iterable
 from pathlib import Path
@@ -22,31 +21,24 @@ def load_csv(
         if not reader.fieldnames:
             raise ValueError("CSV file must contain a header.")
 
-        missing_columns = sorted(
-            set(required_columns or [])
-            - set(reader.fieldnames)
-        )
+        missing_columns = sorted(set(required_columns or []) - set(reader.fieldnames))
 
         if missing_columns:
             raise ValueError(
-                "Missing required CSV columns: "
-                + ", ".join(missing_columns)
+                "Missing required CSV columns: " + ", ".join(missing_columns)
             )
 
-        
         records = []
 
         for record_number, row in enumerate(reader, start=2):
             if None in row:
                 raise ValueError(
-                    f"CSV record {record_number} has "
-                    "more values than columns."
+                    f"CSV record {record_number} has more values than columns."
                 )
 
             if any(value is None for value in row.values()):
                 raise ValueError(
-                    f"CSV record {record_number} has "
-                    "fewer values than columns."
+                    f"CSV record {record_number} has fewer values than columns."
                 )
 
             records.append(dict(row))

@@ -8,12 +8,20 @@ version = "0.1.0"
 description = "LucOps AI data quality and reliability starter package"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+
+
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "python-multipart>=0.0.9",
+]
+
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
     "ruff>=0.9",
+    "httpx2",
 ]
 
 

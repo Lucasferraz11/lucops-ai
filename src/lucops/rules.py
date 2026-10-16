@@ -9,8 +9,4 @@ def is_positive_amount(value: str) -> bool:
     except InvalidOperation:
         return False
 
-    return (
-        amount.is_finite()
-        and amount > 0
-        and amount.as_tuple().exponent >= -2
-    )
+    return amount.is_finite() and amount > 0 and amount.as_tuple().exponent >= -2

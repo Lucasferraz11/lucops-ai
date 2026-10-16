@@ -10,9 +10,7 @@ def test_load_csv_reads_valid_file(tmp_path: Path):
     csv_file = tmp_path / "transacoes.csv"
 
     csv_file.write_text(
-        "id_transacao,cliente_id,valor\n"
-        "T001,C001,150.00\n"
-        "T002,C002,220.50\n",
+        "id_transacao,cliente_id,valor\nT001,C001,150.00\nT002,C002,220.50\n",
         encoding="utf-8",
     )
 
@@ -75,8 +73,7 @@ def test_load_csv_rejects_missing_required_columns(
     csv_file = tmp_path / "missing_columns.csv"
 
     csv_file.write_text(
-        "id_transacao,valor\n"
-        "T001,150.00\n",
+        "id_transacao,valor\nT001,150.00\n",
         encoding="utf-8",
     )
 
@@ -98,9 +95,7 @@ def test_load_csv_rejects_extra_values(tmp_path: Path):
     csv_file = tmp_path / "extra_values.csv"
 
     csv_file.write_text(
-        "id_transacao,cliente_id,valor\n"
-        "T001,C001,150.00\n"
-        "T002,C002,220.50,EXTRA\n",
+        "id_transacao,cliente_id,valor\nT001,C001,150.00\nT002,C002,220.50,EXTRA\n",
         encoding="utf-8",
     )
 
@@ -115,9 +110,7 @@ def test_load_csv_rejects_missing_values(tmp_path: Path):
     csv_file = tmp_path / "missing_values.csv"
 
     csv_file.write_text(
-        "id_transacao,cliente_id,valor\n"
-        "T001,C001,150.00\n"
-        "T002,C002\n",
+        "id_transacao,cliente_id,valor\nT001,C001,150.00\nT002,C002\n",
         encoding="utf-8",
     )
 

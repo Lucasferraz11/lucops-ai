@@ -54,9 +54,7 @@ def test_analyze_csv_rejects_missing_columns(
     output_file = tmp_path / "reports" / "analise.txt"
 
     csv_file.write_text(
-        "id_transacao,valor\n"
-        "T001,150.00\n"
-        "T002,200.00\n",
+        "id_transacao,valor\nT001,150.00\nT002,200.00\n",
         encoding="utf-8",
     )
 

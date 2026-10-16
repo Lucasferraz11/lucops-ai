@@ -9,6 +9,7 @@ import pytest
 def configure_cli_encoding(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("PYTHONIOENCODING", "utf-8")
 
+
 def test_cli_generates_quality_report(tmp_path: Path):
     csv_file = tmp_path / "transacoes.csv"
 
@@ -82,9 +83,7 @@ def test_cli_reports_missing_required_columns(tmp_path: Path):
     output_file = tmp_path / "reports" / "resultado.txt"
 
     csv_file.write_text(
-        "id_transacao,valor\n"
-        "T001,150.00\n"
-        "T002,200.00\n",
+        "id_transacao,valor\nT001,150.00\nT002,200.00\n",
         encoding="utf-8",
     )
 
@@ -115,9 +114,7 @@ def test_cli_rejects_incomplete_csv_row(tmp_path: Path):
     output_file = tmp_path / "reports" / "resultado.txt"
 
     csv_file.write_text(
-        "id_transacao,cliente_id,valor\n"
-        "T001,C001,150.00\n"
-        "T002,C002\n",
+        "id_transacao,cliente_id,valor\nT001,C001,150.00\nT002,C002\n",
         encoding="utf-8",
     )
 
@@ -148,9 +145,7 @@ def test_cli_reports_no_inconsistencies(tmp_path: Path):
     output_file = tmp_path / "reports" / "resultado.txt"
 
     csv_file.write_text(
-        "id_transacao,cliente_id,valor\n"
-        "T001,C001,150.00\n"
-        "T002,C002,200.00\n",
+        "id_transacao,cliente_id,valor\nT001,C001,150.00\nT002,C002,200.00\n",
         encoding="utf-8",
     )
 

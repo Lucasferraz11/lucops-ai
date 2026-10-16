@@ -1,0 +1,30 @@
+info:
+  name: Endpoint Not Found
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: http://127.0.0.1:8000/rota-inexistente
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Deve retornar status 404", function () {
+            expect(res.getStatus()).to.equal(404);
+        });
+
+        test("Deve informar que a rota nao existe", function () {
+            const body = res.getBody();
+
+            expect(body.detail).to.equal("Not Found");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

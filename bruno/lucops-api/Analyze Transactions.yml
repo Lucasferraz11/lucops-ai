@@ -1,0 +1,50 @@
+info:
+  name: Analyze Transactions
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/analyses
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value:
+          - ../../data/sample/transacoes_invalidas.csv
+        contentType: text/csv; charset=utf-8
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("Deve retornar status 200", function () {
+            expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Deve identificar inconsistencias", function () {
+            const body = res.getBody();
+
+            expect(body.quality_status).to.equal(
+                "COM INCONSISTÊNCIAS"
+            );
+        });
+
+        test("Deve retornar os indicadores corretos", function () {
+            const body = res.getBody();
+
+            expect(body.summary.total_records).to.equal(4);
+            expect(body.summary.valid_records).to.equal(1);
+            expect(body.summary.invalid_records).to.equal(3);
+            expect(body.summary.total_issues).to.equal(3);
+            expect(body.summary.valid_percentage).to.equal(25.0);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

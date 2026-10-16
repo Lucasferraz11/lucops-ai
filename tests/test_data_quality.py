@@ -8,7 +8,10 @@ from lucops import DataQualityIssue, validate_record
 def test_validate_record_flags_missing_required_field():
     issues = validate_record({"name": "Ana"}, required_fields=["name", "email"])
 
-    assert any(issue.field == "email" and issue.message == "Field is required." for issue in issues)
+    assert any(
+        issue.field == "email" and issue.message == "Field is required."
+        for issue in issues
+    )
 
 
 def test_validate_record_flags_rule_failures():
@@ -18,7 +21,9 @@ def test_validate_record_flags_rule_failures():
         rules={"age": lambda value: value >= 0},
     )
 
-    assert any(issue.field == "age" and issue.message == "Rule failed." for issue in issues)
+    assert any(
+        issue.field == "age" and issue.message == "Rule failed." for issue in issues
+    )
 
 
 def test_validate_record_accepts_valid_record():
@@ -66,4 +71,3 @@ def test_validate_record_propagates_unexpected_error():
             record={"valor": 100},
             rules={"valor": broken_rule},
         )
-
