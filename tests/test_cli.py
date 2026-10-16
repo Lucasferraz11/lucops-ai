@@ -2,6 +2,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def configure_cli_encoding(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("PYTHONIOENCODING", "utf-8")
 
 def test_cli_generates_quality_report(tmp_path: Path):
     csv_file = tmp_path / "transacoes.csv"
