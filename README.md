@@ -1,4 +1,3 @@
-
 # LucOps AI
 
 Intelligent Data Quality & Reliability Platform
@@ -127,4 +126,3 @@ Verificar a qualidade do código:
 - Agentes de IA para investigação de inconsistências.
 - Integração com serviços Cloud.
 
-**Status:** projeto em desenvolvimento.
