@@ -127,6 +127,9 @@ A API estará disponível em:
 
 `http://127.0.0.1:8000`
 
+Para deploy na Vercel, o entrypoint da API está configurado em `pyproject.toml`
+como `src.lucops.api:app`.
+
 Para acessar a documentação interativa Swagger UI:
 
 `http://127.0.0.1:8000/docs`
