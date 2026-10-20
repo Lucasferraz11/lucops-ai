@@ -24,6 +24,10 @@ dev = [
     "httpx2",
 ]
 
+dashboard = [
+    "streamlit>=1.40",
+    "requests>=2.32",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

@@ -1,0 +1,4 @@
+id_transacao,cliente_id,valor
+T101,C101,150.00
+T102,C102,250.50
+T103,C103,400.00
