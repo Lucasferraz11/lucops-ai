@@ -1,7 +1,27 @@
 import hashlib
+import os
 
 import requests
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
+
+
+def get_api_base_url() -> str:
+    api_base_url = os.getenv("LUCOPS_API_URL")
+
+    if api_base_url is None:
+        try:
+            api_base_url = st.secrets["LUCOPS_API_URL"]
+        except (KeyError, StreamlitSecretNotFoundError):
+            api_base_url = "http://127.0.0.1:8000"
+
+    if not isinstance(api_base_url, str) or not api_base_url.strip():
+        raise ValueError("LUCOPS_API_URL deve conter a URL base da API.")
+
+    return api_base_url.strip().rstrip("/")
+
+
+API_BASE_URL = get_api_base_url()
 
 st.set_page_config(
     page_title="LucOps AI | Dashboard",
@@ -35,7 +55,7 @@ with st.sidebar:
 
     try:
         response = requests.get(
-            "http://127.0.0.1:8000/health",
+            f"{API_BASE_URL}/health",
             timeout=5,
         )
         response.raise_for_status()
@@ -99,7 +119,7 @@ with col_analysis, st.container(border=True):
             try:
                 with st.spinner("Analisando os dados..."):
                     response = requests.post(
-                        "http://127.0.0.1:8000/analyses",
+                        f"{API_BASE_URL}/analyses",
                         files={
                             "file": (
                                 uploaded_file.name,

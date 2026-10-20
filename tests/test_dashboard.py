@@ -50,6 +50,18 @@ def test_dashboard_api_unavailable():
     )
 
 
+def test_dashboard_uses_configured_api_url():
+    with (
+        patch.dict("os.environ", {"LUCOPS_API_URL": "https://api.example.com/"}),
+        patch("requests.get") as mock_get,
+    ):
+        mock_get.return_value.json.return_value = {"status": "ok"}
+        app = AppTest.from_file(str(APP_PATH)).run(timeout=10)
+
+    assert not app.exception
+    mock_get.assert_called_once_with("https://api.example.com/health", timeout=5)
+
+
 def test_dashboard_displays_invalid_records():
     # Simula o resultado de uma análise de qualidade
     analysis_result = {

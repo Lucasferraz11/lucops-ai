@@ -313,6 +313,23 @@ Dashboard: http://localhost:8501
 Os dois serviços devem estar em execução para realizar
 análises pela interface.
 
+### Deploy do dashboard e da API
+
+O dashboard Streamlit e a API FastAPI são serviços separados. Publique a API
+na Vercel e mantenha o dashboard no Streamlit Community Cloud. No painel da
+Vercel, teste a API pelo endpoint `/health` da URL pública; a raiz da URL não
+é um endpoint da API.
+
+No Streamlit Community Cloud, abra **App settings > Secrets** e configure a
+URL base pública da API:
+
+```toml
+LUCOPS_API_URL = "https://sua-api.vercel.app"
+```
+
+Após salvar, reinicie o dashboard. Localmente, sem essa configuração, o
+dashboard continua usando `http://127.0.0.1:8000`.
+
 ### Utilizando o dashboard
 
 1. Acesse o dashboard no navegador.
