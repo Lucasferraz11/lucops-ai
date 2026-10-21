@@ -23,3 +23,7 @@ dist/
 
 #Generated reports
 /reports/
+# Generated ML artifacts
+/models/
+*.joblib
+*.joblib.json

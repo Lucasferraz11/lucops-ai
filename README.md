@@ -376,3 +376,82 @@ e verificações de qualidade automaticamente.
 
 O dashboard atual representa o MVP de visualização
 e análise de qualidade de dados do LucOps AI.
+
+## Machine Learning: comandos locais
+
+A CLI de ML e independente da CLI principal. Requer o extra opcional `ml`
+(`python -m pip install -e ".[ml]"`). Use o mesmo ambiente e as mesmas versoes
+de dependencias no treinamento e na analise.
+
+Exemplo no PowerShell, a partir da raiz do projeto:
+
+```powershell
+.\.venv\Scripts\python.exe -m lucops.ml train data/sample/transacoes.csv --model models/isolation_forest.joblib --model-version iforest-v1
+.\.venv\Scripts\python.exe -m lucops.ml analyze data/sample/transacoes_invalidas.csv --model models/isolation_forest.joblib --output reports/anomalies.json
+```
+
+O treinamento usa apenas registros elegiveis e exige pelo menos dois.
+Salva o modelo e o arquivo acompanhante `isolation_forest.joblib.json`, com
+versao, atributo `valor`, parametros, versao do Scikit-learn, quantidade de
+registros usados e checksum. Mantenha os dois arquivos juntos. Caminhos de
+saida existentes nao sao sobrescritos; escolha outro nome para um novo treino.
+
+A analise carrega o modelo sem treinar novamente. Retorna JSON no terminal
+e, opcionalmente, em `--output`, com resultados por transacao e motivos dos
+registros inelegiveis. Pontuacoes positivas indicam anomalias em relacao ao
+limiar aprendido; nao sao probabilidades nem confirmacao de fraude.
+Os status tradicionais de qualidade nao sao alterados.
+
+Carregue somente artefatos locais confiaveis gerados por este projeto.
+Joblib pode executar codigo ao carregar: metadados e checksum verificam
+compatibilidade e integridade, mas nao autenticam a origem de um arquivo.
+A versao do Scikit-learn deve ser exatamente a usada no treinamento.
+Os CSVs de exemplo demonstram o fluxo; nao validam a eficacia do modelo.
+
+### Avaliacao reproduzivel
+
+Execute `python -m lucops.ml.evaluation` para comparar Isolation Forest e
+quantis em dados sinteticos separados de treino e avaliacao, sem gerar
+artefatos. Consulte o [protocolo, resultados e limitacoes](docs/ml-evaluation.md).
+
+### ML na API e no dashboard
+
+Treine um modelo local com a CLI de ML antes de iniciar a API.
+No terminal do servidor, configure o caminho do artefato confiavel:
+
+```powershell
+$env:LUCOPS_MODEL_PATH = (Resolve-Path models/isolation_forest.joblib).Path
+.\.venv\Scripts\python.exe -m uvicorn lucops.api:app --reload
+```
+
+Mantenha o `.joblib` e seu `.joblib.json` juntos, com as mesmas versoes de
+dependencias usadas no treino e o extra `ml` instalado no servidor.
+O modelo e carregado na primeira analise, uma vez por processo/caminho.
+Reinicie os workers apos substituir o modelo no mesmo caminho.
+Nenhuma requisicao treina ou aceita modelos enviados por usuarios.
+
+`POST /anomaly-analyses` recebe CSV no campo multipart `file`.
+Retorna `model_version`, `evaluated_records`, `skipped_records`,
+`anomalies_detected`, `results` e `ineligible`.
+Resultados incluem indice, ID, valor original, pontuacao e `is_anomaly`;
+registros ignorados preservam os motivos de qualidade.
+
+- HTTP 200: inferencia concluida, inclusive CSV sem registros elegiveis.
+- HTTP 400: estrutura CSV ou codificacao invalida.
+- HTTP 422: arquivo ausente na requisicao.
+- HTTP 503: modelo nao configurado, ausente, corrompido ou incompativel,
+  ou dependencias opcionais de ML indisponiveis.
+
+Os contratos de `/health` e `/analyses` permanecem inalterados.
+
+No dashboard, envie o CSV em **Nova analise** e use **Detectar anomalias**
+na secao de Machine Learning. A analise de qualidade continua disponivel
+pelo botao **Analisar dados**. Os resultados sao independentes.
+O painel de ML mostra contagens, versao do modelo, tabela de transacoes
+sinalizadas e motivos dos registros ignorados. Trocar o arquivo limpa os
+resultados anteriores. As tabelas de ML nao mudam o status de qualidade.
+
+Os alertas estatisticos exigem investigacao, nao confirmam fraude e nao
+representam probabilidades. O modelo utiliza apenas `valor`; a avaliacao
+sintetica mostrou falsos positivos e nao valida eficacia em dados reais.
+A API usa somente artefatos locais confiaveis configurados no servidor.

@@ -1,3 +1,4 @@
+import csv
 from dataclasses import asdict
 from pathlib import Path
 from shutil import copyfileobj
@@ -62,3 +63,34 @@ def create_analysis(
         "quality_status": get_quality_status(result.summary),
         "summary": asdict(result.summary),
     }
+
+
+@app.post(
+    "/anomaly-analyses",
+    responses={
+        400: {"description": "Invalid CSV"},
+        503: {"description": "Server ML model unavailable"},
+    },
+)
+def create_anomaly_analysis(
+    file: Annotated[UploadFile, File()],
+) -> dict[str, object]:
+    """Infer anomalies using only the trusted model configured on the server."""
+    # Keep the traditional API usable without the optional ML dependencies.
+    try:
+        from .ml.service import ModelUnavailableError, analyze_csv_anomalies
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=503, detail="Dependências de ML indisponíveis no servidor."
+        ) from exc
+
+    with TemporaryDirectory() as temporary_dir:
+        csv_path = Path(temporary_dir) / "transactions.csv"
+        with csv_path.open("wb") as destination:
+            copyfileobj(file.file, destination)
+        try:
+            return analyze_csv_anomalies(csv_path)
+        except ModelUnavailableError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except (ValueError, csv.Error) as exc:
+            raise HTTPException(status_code=400, detail=f"CSV inválido: {exc}") from exc
