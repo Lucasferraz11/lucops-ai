@@ -3,9 +3,9 @@ from dataclasses import asdict
 from pathlib import Path
 from shutil import copyfileobj
 from tempfile import TemporaryDirectory
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
 from .application import analyze_csv
 from .rules import is_positive_amount
@@ -94,3 +94,57 @@ def create_anomaly_analysis(
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         except (ValueError, csv.Error) as exc:
             raise HTTPException(status_code=400, detail=f"CSV inválido: {exc}") from exc
+
+
+@app.post("/investigations")
+def create_investigation(
+    file: Annotated[UploadFile, File()],
+    record_index: Annotated[int, Form()],
+    provider: Annotated[Literal["simulated", "openai"], Form()] = "simulated",
+) -> dict[str, object]:
+    """Investigate one uploaded record; all facts are computed on the server."""
+    from .agents.openai_provider import (
+        OpenAIProviderError,
+        OpenAIProviderResponseError,
+    )
+    from .agents.service import investigate_transaction
+    from .ingestion import load_csv
+
+    if record_index < 1:
+        raise HTTPException(status_code=422, detail="O índice deve ser positivo.")
+    with TemporaryDirectory() as temporary_dir:
+        csv_path = Path(temporary_dir) / "transactions.csv"
+        with csv_path.open("wb") as destination:
+            copyfileobj(file.file, destination)
+        try:
+            records = load_csv(
+                csv_path,
+                required_columns=("id_transacao", "cliente_id", "valor"),
+            )
+        except (ValueError, csv.Error, UnicodeError) as exc:
+            raise HTTPException(status_code=400, detail="CSV inválido.") from exc
+        if record_index > len(records):
+            raise HTTPException(
+                status_code=404, detail="Transação não encontrada no CSV."
+            )
+        try:
+            result = investigate_transaction(
+                csv_path, record_index, provider_mode=provider
+            )
+        except IndexError as exc:
+            raise HTTPException(
+                status_code=404, detail="Transação não encontrada no CSV."
+            ) from exc
+        except OpenAIProviderResponseError as exc:
+            raise HTTPException(
+                status_code=502, detail="Resposta do provedor de investigação inválida."
+            ) from exc
+        except OpenAIProviderError as exc:
+            raise HTTPException(
+                status_code=503, detail="Provedor de investigação indisponível."
+            ) from exc
+        except (ValueError, csv.Error, UnicodeError) as exc:
+            raise HTTPException(
+                status_code=500, detail="Falha interna na investigação."
+            ) from exc
+    return asdict(result)
