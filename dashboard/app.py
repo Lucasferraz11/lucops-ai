@@ -1,9 +1,14 @@
+import csv
 import hashlib
+import io
 import os
 
 import requests
 import streamlit as st
 from streamlit.errors import StreamlitSecretNotFoundError
+
+from lucops.agents.money import format_brl_amount
+from lucops.agents.presentation import build_executive_view
 
 
 def get_api_base_url() -> str:
@@ -36,6 +41,12 @@ if "analysis_result" not in st.session_state:
 
 if "anomaly_result" not in st.session_state:
     st.session_state.anomaly_result = None
+
+if "investigation_result" not in st.session_state:
+    st.session_state.investigation_result = None
+
+if "investigation_selection" not in st.session_state:
+    st.session_state.investigation_selection = None
 
 if "uploaded_file_id" not in st.session_state:
     st.session_state.uploaded_file_id = None
@@ -110,6 +121,8 @@ with col_analysis, st.container(border=True):
     if current_file_id != st.session_state.uploaded_file_id:
         st.session_state.analysis_result = None
         st.session_state.anomaly_result = None
+        st.session_state.investigation_result = None
+        st.session_state.investigation_selection = None
         st.session_state.uploaded_file_id = current_file_id
 
     if uploaded_file is not None:
@@ -549,3 +562,211 @@ with st.container(border=True):
                     ],
                     hide_index=True,
                 )
+
+
+with st.container(border=True):
+    st.subheader("Investigação com IA")
+    st.caption(
+        "Evidências verificadas vêm do servidor. Hipóteses são possibilidades "
+        "não confirmadas; alertas de ML não são prova de fraude."
+    )
+    if uploaded_file is None:
+        st.info("Selecione um CSV para investigar uma transação.")
+    else:
+        try:
+            content = uploaded_file.getvalue().decode("utf-8-sig")
+            record_count = sum(1 for _ in csv.DictReader(io.StringIO(content)))
+        except (UnicodeError, csv.Error):
+            record_count = 0
+            st.error("Não foi possível listar os registros do CSV.")
+        if record_count == 0:
+            st.info("Nenhuma transação disponível para investigação.")
+        else:
+            selected_index = st.selectbox(
+                "Transação do CSV",
+                range(1, record_count + 1),
+                format_func=lambda index: f"Registro {index}",
+                key="investigation_record_index",
+            )
+            selected_provider = st.selectbox(
+                "Provedor",
+                ("simulated", "openai"),
+                key="investigation_provider",
+            )
+            selection = (current_file_id, selected_index, selected_provider)
+            if selection != st.session_state.investigation_selection:
+                st.session_state.investigation_result = None
+                st.session_state.investigation_selection = selection
+            if selected_provider == "openai":
+                st.caption(
+                    "O modo OpenAI requer configuração e liberação de chamadas "
+                    "no backend. A chave nunca é enviada pelo dashboard."
+                )
+            if st.button("Investigar com IA", key="investigate_transaction"):
+                st.session_state.investigation_result = None
+                try:
+                    with st.spinner("Investigando a transação..."):
+                        response = requests.post(
+                            f"{API_BASE_URL}/investigations",
+                            files={
+                                "file": (
+                                    uploaded_file.name,
+                                    uploaded_file.getvalue(),
+                                    "text/csv",
+                                )
+                            },
+                            data={
+                                "record_index": selected_index,
+                                "provider": selected_provider,
+                            },
+                            timeout=35,
+                        )
+                    if response.status_code == 200:
+                        st.session_state.investigation_result = response.json()
+                    elif response.status_code == 404:
+                        st.error("A transação selecionada não foi encontrada no CSV.")
+                    elif response.status_code == 400:
+                        st.error("CSV inválido para investigação.")
+                    elif response.status_code in (422, 503):
+                        st.error(
+                            "Investigação indisponível ou configuração inválida. "
+                            "Verifique o provedor no servidor."
+                        )
+                    else:
+                        st.error(f"Falha na investigação: HTTP {response.status_code}")
+                except (requests.RequestException, ValueError):
+                    st.error(
+                        "Não foi possível concluir a investigação. Tente novamente."
+                    )
+
+            investigation = st.session_state.investigation_result
+            if investigation is not None:
+                view = build_executive_view(investigation)
+                if view["mode"] == "simulated":
+                    st.info(
+                        "Provedor: simulated — resposta determinística; nenhum LLM foi chamado."
+                    )
+                else:
+                    st.info(f"Provedor: {view['provider']} — modo openai")
+                st.markdown("**Visão de negócio**")
+                ml = investigation["context"]["ml"]
+                quality_label = (
+                    "Com inconsistências"
+                    if investigation["context"]["inconsistencies"]
+                    else "Sem inconsistências"
+                )
+                if (
+                    not investigation["context"]["inconsistencies"]
+                    and "outro registro com o mesmo identificador" in view["quality"]
+                ):
+                    quality_label = "ID repetido no CSV"
+                ml_label = {
+                    "evaluated": (
+                        "Alerta estatístico" if ml["is_anomaly"] else "Sem alerta"
+                    ),
+                    "ineligible": "Inelegível",
+                    "unavailable": "Indisponível",
+                }[ml["status"]]
+                for column, title, value in zip(
+                    st.columns(4, gap="small"),
+                    ("Registro", "Valor", "Qualidade", "Machine Learning"),
+                    (
+                        str(view["record_index"]),
+                        format_brl_amount(
+                            investigation["context"]["transaction"]["original_value"]
+                        ),
+                        quality_label,
+                        ml_label,
+                    ),
+                    strict=True,
+                ):
+                    with column, st.container(border=True):
+                        st.metric(title, value)
+                st.write(view["summary"])
+                st.markdown("**Evidências principais**")
+                st.dataframe(
+                    [
+                        {
+                            "Ref.": view["labels"][item["evidence_id"]],
+                            "Campo": item["field_label"],
+                            "Valor": (
+                                "Ocultado"
+                                if item["value"] == "[redacted]"
+                                else item["value"]
+                            ),
+                            "Descrição": item["description"],
+                        }
+                        for item in view["evidence"]
+                    ],
+                    hide_index=True,
+                    width="stretch",
+                    column_config={
+                        "Ref.": st.column_config.TextColumn(width="small"),
+                        "Campo": st.column_config.TextColumn(width="medium"),
+                        "Descrição": st.column_config.TextColumn(width="large"),
+                    },
+                )
+                st.markdown("**Hipóteses não confirmadas**")
+                if view["hypotheses"]:
+                    for item in view["hypotheses"]:
+                        st.warning(item["description"])
+                        st.caption(
+                            "Evidências: "
+                            + ", ".join(
+                                view["labels"][ref] for ref in item["evidence_ids"]
+                            )
+                        )
+                else:
+                    st.info("Nenhuma hipótese fundamentada foi produzida.")
+                st.markdown("**Recomendações**")
+                for item in view["recommendations"]:
+                    st.write(item["action"])
+                    st.caption(
+                        "Evidências: "
+                        + ", ".join(view["labels"][ref] for ref in item["evidence_ids"])
+                    )
+                if view["limitations"]:
+                    st.markdown("**Limitações essenciais**")
+                    for item in view["limitations"]:
+                        st.write(item)
+                with st.expander("Ver detalhes técnicos"):
+                    st.caption(
+                        "As referências completas, pontuações, origens e metadados "
+                        "permanecem disponíveis para auditoria."
+                    )
+                    st.dataframe(
+                        [
+                            {
+                                "Ref.": view["labels"][item["evidence_id"]],
+                                "ID completo": item["evidence_id"],
+                                "Origem": item["source"]["function"],
+                                "Campo": item["source"]["field"],
+                                "Valor": item["value"],
+                                "Descrição": item["description"],
+                            }
+                            for item in investigation["verified_evidence"]
+                        ],
+                        hide_index=True,
+                        width="stretch",
+                        column_config={
+                            "ID completo": st.column_config.TextColumn(width="large"),
+                            "Origem": st.column_config.TextColumn(width="large"),
+                            "Descrição": st.column_config.TextColumn(width="large"),
+                        },
+                    )
+                    evidence_options = investigation["verified_evidence"]
+                    if evidence_options:
+                        selected_evidence = st.selectbox(
+                            "Consultar referência completa",
+                            range(len(evidence_options)),
+                            format_func=lambda index: (
+                                f"{view['labels'][evidence_options[index]['evidence_id']]} "
+                                f"— {evidence_options[index]['source']['field']}"
+                            ),
+                            key="investigation_technical_reference",
+                        )
+                        st.code(
+                            evidence_options[selected_evidence]["evidence_id"],
+                            language=None,
+                        )
+                    st.json(investigation, expanded=False)

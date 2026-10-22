@@ -455,3 +455,43 @@ Os alertas estatisticos exigem investigacao, nao confirmam fraude e nao
 representam probabilidades. O modelo utiliza apenas `valor`; a avaliacao
 sintetica mostrou falsos positivos e nao valida eficacia em dados reais.
 A API usa somente artefatos locais confiaveis configurados no servidor.
+
+## Fase 6: investigação com IA
+
+O motor de investigação combina regras de qualidade, informações do modelo de
+anomalias e ferramentas locais. Cada investigação identifica o CSV pelo hash e
+a transação pelo índice do registro, inclusive quando o ID está vazio ou
+duplicado. Evidências verificadas, hipóteses não confirmadas, recomendações e
+limitações aparecem em campos separados. Não há correção automática.
+
+Para experimentar localmente sem chave ou internet:
+
+```powershell
+.\.venv\Scripts\python.exe -m lucops.agents investigate data/sample/transacoes_invalidas.csv --record-index 2 --provider simulated
+```
+
+Com a API e o dashboard iniciados, envie um CSV em **Nova análise**, escolha
+o registro na seção **Investigação com IA** e clique em **Investigar com IA**.
+O endpoint `POST /investigations` recebe `file`, `record_index` (começando em 1)
+e `provider` (`simulated` por padrão ou `openai`) como multipart/form-data.
+Retorna o contexto, as evidências, hipóteses, recomendações, limitações, modo
+e provedor. Índice ausente ou inválido retorna 422; índice fora do CSV, 404;
+CSV inválido, 400; provedor real indisponível, 503.
+
+O modo simulado é determinístico e não chama um LLM. O modo OpenAI usa a
+Responses API somente quando selecionado, com chave exclusivamente no backend
+e limite local de chamadas inicialmente zero. Nenhum CSV inteiro ou chave é
+enviado ao modelo. Falhas não alternam para respostas simuladas. Consulte
+[configuração e controles](docs/ai-investigation.md) e
+[avaliação e revisão humana](docs/ai-investigation-evaluation.md).
+Alertas estatísticos não são probabilidades nem confirmação de fraude.
+A Fase 6 ainda depende de validação manual e revisão técnica antes do merge.
+
+Na seção **Investigação com IA**, a visão de negócio apresenta em português
+o registro, a qualidade, a situação do ML, as evidências principais com
+referências curtas, hipóteses não confirmadas, recomendações e limitações
+essenciais. **Ver detalhes técnicos** contém as referências SHA-256 completas,
+origens, pontuações e o JSON integral para auditoria. A resposta simulada usa
+textos determinísticos em português e é identificada como tal; o prompt do
+provedor OpenAI solicita português brasileiro, mas o modo real ainda requer
+validação manual antes de uso.
